@@ -14,6 +14,28 @@ class SupabaseService {
     _client = Supabase.instance.client;
   }
 
+  /// اختبار الاتصال بـ Supabase
+  static Future<bool> testConnection() async {
+    try {
+      // محاولة الوصول لقائمة البوكتات للتأكد من الاتصال
+      await _client.storage.listBuckets();
+      return true;
+    } catch (e) {
+      throw Exception('فشل في الاتصال بـ Supabase: $e');
+    }
+  }
+
+  /// اختبار الوصول للبوكت
+  static Future<bool> testBucketAccess() async {
+    try {
+      // محاولة جلب قائمة فارغة للتأكد من الوصول للبوكت
+      await _client.storage.from(bucketName).list(path: '');
+      return true;
+    } catch (e) {
+      throw Exception('فشل في الوصول للبوكت: $e');
+    }
+  }
+
   /// جلب قائمة الملفات من مجلد المؤسسة
   static Future<List<FileObject>> listFiles(String institutionName) async {
     try {

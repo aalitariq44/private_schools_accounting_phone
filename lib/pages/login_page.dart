@@ -15,6 +15,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _institutionController = TextEditingController();
   bool _isLoading = false;
   String _statusMessage = '';
+  bool _supabaseConnected = false;
+  bool _bucketAccessible = false;
 
   @override
   void dispose() {
@@ -28,6 +30,32 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
+  Color _getStatusColor() {
+    if (_statusMessage.contains('✅')) {
+      return Colors.green;
+    } else if (_statusMessage.contains('❌')) {
+      return Colors.red;
+    } else if (_statusMessage.contains('خطأ') ||
+        _statusMessage.contains('فشل')) {
+      return Colors.red;
+    } else {
+      return Colors.blue;
+    }
+  }
+
+  IconData _getStatusIcon() {
+    if (_statusMessage.contains('✅')) {
+      return Icons.check_circle;
+    } else if (_statusMessage.contains('❌')) {
+      return Icons.error;
+    } else if (_statusMessage.contains('خطأ') ||
+        _statusMessage.contains('فشل')) {
+      return Icons.error_outline;
+    } else {
+      return Icons.info;
+    }
+  }
+
   Future<void> _downloadLatestBackup() async {
     if (_institutionController.text.trim().isEmpty) {
       _showError('يرجى إدخال اسم المؤسسة');
@@ -37,12 +65,48 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _isLoading = true;
       _statusMessage = '';
+      _supabaseConnected = false;
+      _bucketAccessible = false;
     });
 
     try {
       final institutionName = _institutionController.text.trim();
 
-      _setStatus('جاري الاتصال بالخادم...');
+      // اختبار الاتصال بـ Supabase
+      _setStatus('جاري اختبار الاتصال بـ Supabase...');
+      try {
+        await SupabaseService.testConnection();
+        setState(() {
+          _supabaseConnected = true;
+        });
+        _setStatus('✅ نجح الاتصال بـ Supabase');
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        setState(() {
+          _supabaseConnected = false;
+        });
+        _setStatus('❌ فشل الاتصال بـ Supabase');
+        await Future.delayed(const Duration(seconds: 1));
+        throw e;
+      }
+
+      // اختبار الوصول للبوكت
+      _setStatus('جاري اختبار الوصول للبوكت...');
+      try {
+        await SupabaseService.testBucketAccess();
+        setState(() {
+          _bucketAccessible = true;
+        });
+        _setStatus('✅ نجح الوصول للبوكت');
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        setState(() {
+          _bucketAccessible = false;
+        });
+        _setStatus('❌ فشل الوصول للبوكت');
+        await Future.delayed(const Duration(seconds: 1));
+        throw e;
+      }
 
       // تنزيل أحدث نسخة احتياطية
       _setStatus('جاري تنزيل أحدث نسخة احتياطية...');
@@ -64,7 +128,8 @@ class _LoginPageState extends State<LoginPage> {
       // حفظ قاعدة البيانات محلياً
       await DatabaseService.saveDatabase(dbBytes);
 
-      _setStatus('تم تحميل البيانات بنجاح!');
+      _setStatus('✅ تم تحميل البيانات بنجاح!');
+      await Future.delayed(const Duration(seconds: 1));
 
       // الانتقال إلى الصفحة الرئيسية
       if (mounted) {
@@ -88,7 +153,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showError(String message) {
     setState(() {
-      _statusMessage = message;
+      _statusMessage = '❌ ' + message;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +161,13 @@ class _LoginPageState extends State<LoginPage> {
         content: Text(message),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'إغلاق',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -140,102 +212,250 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         title: const Text('المدرسة الإلكترونية - عارض البيانات'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.school, size: 80, color: Colors.blue),
-            const SizedBox(height: 32),
-
-            const Text(
-              'مرحباً بك في نظام عرض بيانات المدارس الخاصة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-
-            const SizedBox(height: 32),
-
-            TextField(
-              controller: _institutionController,
-              decoration: const InputDecoration(
-                labelText: 'اسم المؤسسة',
-                hintText: 'أدخل اسم المؤسسة (مثال: sumer)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.business),
-              ),
-              textAlign: TextAlign.center,
-              enabled: !_isLoading,
-            ),
-
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _downloadLatestBackup,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      constraints.maxHeight - 48, // Accounting for padding
                 ),
-                child: _isLoading
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 40),
+
+                    const Icon(Icons.school, size: 100, color: Colors.blue),
+
+                    const SizedBox(height: 32),
+
+                    const Text(
+                      'مرحباً بك في نظام عرض بيانات المدارس الخاصة',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _institutionController,
+                        decoration: const InputDecoration(
+                          labelText: 'اسم المؤسسة',
+                          hintText: 'أدخل اسم المؤسسة (مثال: sumer)',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                          prefixIcon: Icon(Icons.business),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                        enabled: !_isLoading,
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _downloadLatestBackup,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: _isLoading
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text('جاري التحميل...'),
+                                ],
+                              )
+                            : const Text(
+                                'تحميل النسخة الأخيرة',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed: _isLoading ? null : _checkExistingDatabase,
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: const BorderSide(color: Colors.blue, width: 2),
+                        ),
+                        child: const Text(
+                          'التحقق من وجود قاعدة بيانات محفوظة',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // عرض حالة الاتصالات
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'حالة الاتصالات:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
-                          SizedBox(width: 10),
-                          Text('جاري التحميل...'),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                _supabaseConnected
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                color: _supabaseConnected
+                                    ? Colors.green
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'الاتصال بـ Supabase',
+                                style: TextStyle(
+                                  color: _supabaseConnected
+                                      ? Colors.green
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                _bucketAccessible
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                color: _bucketAccessible
+                                    ? Colors.green
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'الوصول للبوكت',
+                                style: TextStyle(
+                                  color: _bucketAccessible
+                                      ? Colors.green
+                                      : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                      )
-                    : const Text(
-                        'تحميل النسخة الأخيرة',
-                        style: TextStyle(fontSize: 16),
                       ),
-              ),
-            ),
+                    ),
 
-            const SizedBox(height: 16),
+                    const SizedBox(height: 32),
 
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton(
-                onPressed: _isLoading ? null : _checkExistingDatabase,
-                child: const Text(
-                  'التحقق من وجود قاعدة بيانات محفوظة',
-                  style: TextStyle(fontSize: 16),
+                    if (_statusMessage.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor().withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _getStatusColor().withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _getStatusIcon(),
+                              color: _getStatusColor(),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _statusMessage,
+                                style: TextStyle(
+                                  color: _getStatusColor(),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(height: 24),
-
-            if (_statusMessage.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                ),
-                child: Text(
-                  _statusMessage,
-                  style: const TextStyle(color: Colors.blue),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
+            );
+          },
         ),
       ),
     );

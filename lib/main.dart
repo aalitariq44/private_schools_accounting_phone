@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/supabase_service.dart';
 import 'pages/login_page.dart';
 
@@ -25,12 +26,39 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
-        // دعم اللغة العربية
+        // دعم اللغة العربية مع خط أفضل
         fontFamily: 'Arial',
+        // تحسين الألوان والتصميم
+        appBarTheme: const AppBarTheme(centerTitle: true, elevation: 1),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
       ),
+      // إضافة الدعم للترجمة
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
       // جعل التطبيق يدعم الاتجاه من اليمين لليسار للغة العربية
       locale: const Locale('ar', 'SA'),
-      supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
       home: const LoginPage(),
       debugShowCheckedModeBanner: false,
     );

@@ -122,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
 
         if (backupFiles.isEmpty) {
           throw Exception(
-            'لم يتم العثور على ملفات نسخ احتياطية في مجلد "backups/$institutionName"',
+            'لم يتم العثور على ملفات نسخ احتياطية في مجلد "$institutionName"',
           );
         }
 

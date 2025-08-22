@@ -36,12 +36,12 @@ class SupabaseService {
     }
   }
 
-  /// جلب قائمة الملفات من مجلد المؤسسة
+  /// جلب قائمة الملفات من مجلد المؤسسة داخل مجلد backups
   static Future<List<FileObject>> listFiles(String institutionName) async {
     try {
       final List<FileObject> objects = await _client.storage
           .from(bucketName)
-          .list(path: institutionName);
+          .list(path: 'backups/$institutionName');
 
       return objects;
     } catch (e) {
@@ -76,7 +76,7 @@ class SupabaseService {
     try {
       final Uint8List fileBytes = await _client.storage
           .from(bucketName)
-          .download('$institutionName/$fileName');
+          .download('backups/$institutionName/$fileName');
 
       return fileBytes;
     } catch (e) {

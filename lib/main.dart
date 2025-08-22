@@ -4,14 +4,14 @@ import 'pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // تهيئة خدمة Supabase
   try {
     await SupabaseService.initialize();
   } catch (e) {
     print('خطأ في تهيئة Supabase: $e');
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -30,10 +30,7 @@ class MyApp extends StatelessWidget {
       ),
       // جعل التطبيق يدعم الاتجاه من اليمين لليسار للغة العربية
       locale: const Locale('ar', 'SA'),
-      supportedLocales: const [
-        Locale('ar', 'SA'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('ar', 'SA'), Locale('en', 'US')],
       home: const LoginPage(),
       debugShowCheckedModeBanner: false,
     );

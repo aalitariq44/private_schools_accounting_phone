@@ -13,10 +13,10 @@ class DatabaseService {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final dbPath = join(directory.path, 'schools.db');
-      
+
       final file = File(dbPath);
       await file.writeAsBytes(dbBytes);
-      
+
       _dbPath = dbPath;
       return dbPath;
     } catch (e) {
@@ -56,7 +56,7 @@ class DatabaseService {
       final directory = await getApplicationDocumentsDirectory();
       final dbPath = join(directory.path, 'schools.db');
       final file = File(dbPath);
-      
+
       if (await file.exists()) {
         _dbPath = dbPath;
         return true;
@@ -71,7 +71,19 @@ class DatabaseService {
   static Future<List<Map<String, dynamic>>> getSchools() async {
     try {
       final db = await openDatabase();
-      return await db.query('Schools');
+
+      // التحقق من وجود الجدول أولاً
+      final tables = await getTableNames();
+      if (!tables.contains('Schools') && !tables.contains('schools')) {
+        throw Exception('جدول المدارس غير موجود في قاعدة البيانات');
+      }
+
+      // جرب Schools أولاً، ثم schools
+      try {
+        return await db.query('Schools');
+      } catch (e) {
+        return await db.query('schools');
+      }
     } catch (e) {
       throw Exception('فشل في جلب بيانات المدارس: $e');
     }
@@ -81,7 +93,19 @@ class DatabaseService {
   static Future<List<Map<String, dynamic>>> getStudents() async {
     try {
       final db = await openDatabase();
-      return await db.query('Students');
+
+      // التحقق من وجود الجدول أولاً
+      final tables = await getTableNames();
+      if (!tables.contains('Students') && !tables.contains('students')) {
+        throw Exception('جدول الطلاب غير موجود في قاعدة البيانات');
+      }
+
+      // جرب Students أولاً، ثم students
+      try {
+        return await db.query('Students');
+      } catch (e) {
+        return await db.query('students');
+      }
     } catch (e) {
       throw Exception('فشل في جلب بيانات الطلاب: $e');
     }
@@ -91,14 +115,28 @@ class DatabaseService {
   static Future<List<Map<String, dynamic>>> getPayments() async {
     try {
       final db = await openDatabase();
-      return await db.query('Payments');
+
+      // التحقق من وجود الجدول أولاً
+      final tables = await getTableNames();
+      if (!tables.contains('Payments') && !tables.contains('payments')) {
+        throw Exception('جدول الأقساط غير موجود في قاعدة البيانات');
+      }
+
+      // جرب Payments أولاً، ثم payments
+      try {
+        return await db.query('Payments');
+      } catch (e) {
+        return await db.query('payments');
+      }
     } catch (e) {
       throw Exception('فشل في جلب بيانات الأقساط: $e');
     }
   }
 
   /// جلب طلاب مدرسة معينة
-  static Future<List<Map<String, dynamic>>> getStudentsBySchool(int schoolId) async {
+  static Future<List<Map<String, dynamic>>> getStudentsBySchool(
+    int schoolId,
+  ) async {
     try {
       final db = await openDatabase();
       return await db.query(
@@ -112,7 +150,9 @@ class DatabaseService {
   }
 
   /// جلب أقساط طالب معين
-  static Future<List<Map<String, dynamic>>> getPaymentsByStudent(int studentId) async {
+  static Future<List<Map<String, dynamic>>> getPaymentsByStudent(
+    int studentId,
+  ) async {
     try {
       final db = await openDatabase();
       return await db.query(
@@ -134,7 +174,7 @@ class DatabaseService {
         where: 'type = ?',
         whereArgs: ['table'],
       );
-      
+
       return result
           .map((table) => table['name'] as String)
           .where((name) => !name.startsWith('sqlite_'))
@@ -145,7 +185,9 @@ class DatabaseService {
   }
 
   /// جلب معلومات الأعمدة لجدول معين
-  static Future<List<Map<String, dynamic>>> getTableInfo(String tableName) async {
+  static Future<List<Map<String, dynamic>>> getTableInfo(
+    String tableName,
+  ) async {
     try {
       final db = await openDatabase();
       return await db.rawQuery('PRAGMA table_info($tableName)');

@@ -27,7 +27,7 @@ class _SchoolsPageState extends State<SchoolsPage> {
       });
 
       final schools = await DatabaseService.getSchools();
-      
+
       setState(() {
         _schools = schools;
         _isLoading = false;
@@ -66,118 +66,112 @@ class _SchoolsPageState extends State<SchoolsPage> {
               ),
             )
           : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadSchools,
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            )
+          : _schools.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.school_outlined, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'لا توجد مدارس مسجلة',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // عرض إحصائيات سريعة
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _errorMessage,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadSchools,
-                        child: const Text('إعادة المحاولة'),
+                      Column(
+                        children: [
+                          const Icon(Icons.school, color: Colors.blue),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${_schools.length}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          const Text('إجمالي المدارس'),
+                        ],
                       ),
                     ],
                   ),
-                )
-              : _schools.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.school_outlined,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'لا توجد مدارس مسجلة',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        // عرض إحصائيات سريعة
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Column(
-                                children: [
-                                  const Icon(Icons.school, color: Colors.blue),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${_schools.length}',
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                  const Text('إجمالي المدارس'),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // قائمة المدارس
-                        Expanded(
-                          child: _schools.length <= 10
-                              ? _buildDataTable()
-                              : _buildListView(),
-                        ),
-                      ],
-                    ),
+                ),
+
+                // قائمة المدارس
+                Expanded(
+                  child: _schools.length <= 10
+                      ? _buildDataTable()
+                      : _buildListView(),
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildDataTable() {
     final columns = _schools.isNotEmpty ? _schools.first.keys.toList() : [];
-    
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: SingleChildScrollView(
         child: DataTable(
           columns: columns
-              .map((column) => DataColumn(
-                    label: Text(
-                      _translateColumnName(column),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ))
+              .map(
+                (column) => DataColumn(
+                  label: Text(
+                    _translateColumnName(column),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )
               .toList(),
           rows: _schools
-              .map((school) => DataRow(
-                    cells: columns
-                        .map((column) => DataCell(
-                              Text(school[column]?.toString() ?? ''),
-                            ))
-                        .toList(),
-                  ))
+              .map(
+                (school) => DataRow(
+                  cells: columns
+                      .map(
+                        (column) =>
+                            DataCell(Text(school[column]?.toString() ?? '')),
+                      )
+                      .toList(),
+                ),
+              )
               .toList(),
         ),
       ),
@@ -195,7 +189,9 @@ class _SchoolsPageState extends State<SchoolsPage> {
           child: ExpansionTile(
             leading: const Icon(Icons.school, color: Colors.blue),
             title: Text(
-              school['name']?.toString() ?? school['school_name']?.toString() ?? 'مدرسة غير محددة',
+              school['name']?.toString() ??
+                  school['school_name']?.toString() ??
+                  'مدرسة غير محددة',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text('الرقم التعريفي: ${school['id'] ?? 'غير محدد'}'),
@@ -205,27 +201,31 @@ class _SchoolsPageState extends State<SchoolsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: school.entries
-                      .map((entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 120,
-                                  child: Text(
-                                    '${_translateColumnName(entry.key)}:',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                    ),
+                      .map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 120,
+                                child: Text(
+                                  '${_translateColumnName(entry.key)}:',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
                                   ),
                                 ),
-                                Expanded(
-                                  child: Text(entry.value?.toString() ?? 'غير محدد'),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  entry.value?.toString() ?? 'غير محدد',
                                 ),
-                              ],
-                            ),
-                          ))
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -251,7 +251,7 @@ class _SchoolsPageState extends State<SchoolsPage> {
       'created_at': 'تاريخ الإنشاء',
       'updated_at': 'تاريخ التحديث',
     };
-    
+
     return translations[columnName.toLowerCase()] ?? columnName;
   }
 }

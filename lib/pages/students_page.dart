@@ -28,7 +28,7 @@ class _StudentsPageState extends State<StudentsPage> {
       });
 
       final students = await DatabaseService.getStudents();
-      
+
       setState(() {
         _students = students;
         _isLoading = false;
@@ -45,12 +45,13 @@ class _StudentsPageState extends State<StudentsPage> {
     if (_searchQuery.isEmpty) {
       return _students;
     }
-    
+
     return _students.where((student) {
       final name = student['name']?.toString().toLowerCase() ?? '';
-      final studentName = student['student_name']?.toString().toLowerCase() ?? '';
+      final studentName =
+          student['student_name']?.toString().toLowerCase() ?? '';
       final query = _searchQuery.toLowerCase();
-      
+
       return name.contains(query) || studentName.contains(query);
     }).toList();
   }
@@ -81,150 +82,141 @@ class _StudentsPageState extends State<StudentsPage> {
               ),
             )
           : _errorMessage.isNotEmpty
-              ? Center(
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadStudents,
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            )
+          : _students.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'لا يوجد طلاب مسجلون',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                // شريط البحث والإحصائيات
+                Container(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
+                      // شريط البحث
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'البحث عن طالب',
+                          hintText: 'أدخل اسم الطالب...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
                       ),
+
                       const SizedBox(height: 16),
-                      Text(
-                        _errorMessage,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadStudents,
-                        child: const Text('إعادة المحاولة'),
+
+                      // الإحصائيات
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            Column(
+                              children: [
+                                const Icon(Icons.people, color: Colors.green),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_students.length}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                                const Text('إجمالي الطلاب'),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                const Icon(Icons.search, color: Colors.blue),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_filteredStudents.length}',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                const Text('نتائج البحث'),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                )
-              : _students.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'لا يوجد طلاب مسجلون',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        // شريط البحث والإحصائيات
-                        Container(
-                          padding: const EdgeInsets.all(16),
+                ),
+
+                // قائمة الطلاب
+                Expanded(
+                  child: _filteredStudents.isEmpty
+                      ? const Center(
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // شريط البحث
-                              TextField(
-                                decoration: const InputDecoration(
-                                  labelText: 'البحث عن طالب',
-                                  hintText: 'أدخل اسم الطالب...',
-                                  prefixIcon: Icon(Icons.search),
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _searchQuery = value;
-                                  });
-                                },
+                              Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey,
                               ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              // الإحصائيات
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    Column(
-                                      children: [
-                                        const Icon(Icons.people, color: Colors.green),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${_students.length}',
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green,
-                                          ),
-                                        ),
-                                        const Text('إجمالي الطلاب'),
-                                      ],
-                                    ),
-                                    Column(
-                                      children: [
-                                        const Icon(Icons.search, color: Colors.blue),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${_filteredStudents.length}',
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue,
-                                          ),
-                                        ),
-                                        const Text('نتائج البحث'),
-                                      ],
-                                    ),
-                                  ],
+                              SizedBox(height: 16),
+                              Text(
+                                'لا توجد نتائج للبحث',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        
-                        // قائمة الطلاب
-                        Expanded(
-                          child: _filteredStudents.isEmpty
-                              ? const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.search_off,
-                                        size: 64,
-                                        color: Colors.grey,
-                                      ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'لا توجد نتائج للبحث',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : _buildStudentsList(),
-                        ),
-                      ],
-                    ),
+                        )
+                      : _buildStudentsList(),
+                ),
+              ],
+            ),
     );
   }
 
@@ -248,9 +240,9 @@ class _StudentsPageState extends State<StudentsPage> {
               ),
             ),
             title: Text(
-              student['name']?.toString() ?? 
-              student['student_name']?.toString() ?? 
-              'طالب غير محدد',
+              student['name']?.toString() ??
+                  student['student_name']?.toString() ??
+                  'طالب غير محدد',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Column(
@@ -267,31 +259,34 @@ class _StudentsPageState extends State<StudentsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...student.entries
-                        .map((entry) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 120,
-                                    child: Text(
-                                      '${_translateColumnName(entry.key)}:',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(entry.value?.toString() ?? 'غير محدد'),
-                                  ),
-                                ],
+                    ...student.entries.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                '${_translateColumnName(entry.key)}:',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            )),
-                    
+                            ),
+                            Expanded(
+                              child: Text(
+                                entry.value?.toString() ?? 'غير محدد',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     const Divider(),
-                    
+
                     // زر عرض الأقساط
                     SizedBox(
                       width: double.infinity,
@@ -312,10 +307,11 @@ class _StudentsPageState extends State<StudentsPage> {
   }
 
   String _getStudentInitials(Map<String, dynamic> student) {
-    final name = student['name']?.toString() ?? 
-                 student['student_name']?.toString() ?? 
-                 'طالب';
-    
+    final name =
+        student['name']?.toString() ??
+        student['student_name']?.toString() ??
+        'طالب';
+
     final words = name.split(' ');
     if (words.length >= 2) {
       return '${words[0][0]}${words[1][0]}';
@@ -339,30 +335,39 @@ class _StudentsPageState extends State<StudentsPage> {
       }
 
       final payments = await DatabaseService.getPaymentsByStudent(studentId);
-      
+
       if (!mounted) return;
-      
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('أقساط الطالب: ${student['name'] ?? student['student_name'] ?? 'غير محدد'}'),
+          title: Text(
+            'أقساط الطالب: ${student['name'] ?? student['student_name'] ?? 'غير محدد'}',
+          ),
           content: SizedBox(
             width: double.maxFinite,
             height: 400,
             child: payments.isEmpty
-                ? const Center(
-                    child: Text('لا توجد أقساط مسجلة لهذا الطالب'),
-                  )
+                ? const Center(child: Text('لا توجد أقساط مسجلة لهذا الطالب'))
                 : ListView.builder(
                     itemCount: payments.length,
                     itemBuilder: (context, index) {
                       final payment = payments[index];
                       return Card(
                         child: ListTile(
-                          leading: const Icon(Icons.payment, color: Colors.orange),
-                          title: Text('المبلغ: ${payment['amount'] ?? 'غير محدد'}'),
-                          subtitle: Text('التاريخ: ${payment['payment_date'] ?? payment['date'] ?? 'غير محدد'}'),
-                          trailing: Text(payment['status']?.toString() ?? 'غير محدد'),
+                          leading: const Icon(
+                            Icons.payment,
+                            color: Colors.orange,
+                          ),
+                          title: Text(
+                            'المبلغ: ${payment['amount'] ?? 'غير محدد'}',
+                          ),
+                          subtitle: Text(
+                            'التاريخ: ${payment['payment_date'] ?? payment['date'] ?? 'غير محدد'}',
+                          ),
+                          trailing: Text(
+                            payment['status']?.toString() ?? 'غير محدد',
+                          ),
                         ),
                       );
                     },
@@ -407,7 +412,7 @@ class _StudentsPageState extends State<StudentsPage> {
       'created_at': 'تاريخ الإنشاء',
       'updated_at': 'تاريخ التحديث',
     };
-    
+
     return translations[columnName.toLowerCase()] ?? columnName;
   }
 }

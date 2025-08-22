@@ -41,29 +41,31 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final institutionName = _institutionController.text.trim();
-      
+
       _setStatus('جاري الاتصال بالخادم...');
-      
+
       // تنزيل أحدث نسخة احتياطية
       _setStatus('جاري تنزيل أحدث نسخة احتياطية...');
-      final zipBytes = await SupabaseService.downloadLatestBackup(institutionName);
-      
+      final zipBytes = await SupabaseService.downloadLatestBackup(
+        institutionName,
+      );
+
       _setStatus('جاري فك ضغط الملف...');
-      
+
       // فك ضغط الملف واستخراج قاعدة البيانات
       final dbBytes = await ZipService.extractSchoolsDb(zipBytes);
-      
+
       if (dbBytes == null) {
         throw Exception('لم يتم العثور على ملف قاعدة البيانات');
       }
-      
+
       _setStatus('جاري حفظ قاعدة البيانات...');
-      
+
       // حفظ قاعدة البيانات محلياً
       await DatabaseService.saveDatabase(dbBytes);
-      
+
       _setStatus('تم تحميل البيانات بنجاح!');
-      
+
       // الانتقال إلى الصفحة الرئيسية
       if (mounted) {
         Navigator.pushReplacement(
@@ -73,7 +75,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       }
-      
     } catch (e) {
       _showError('خطأ في التحميل: ${e.toString()}');
     } finally {
@@ -89,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _statusMessage = message;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -105,7 +106,9 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('قاعدة بيانات موجودة'),
-          content: const Text('توجد قاعدة بيانات محفوظة مسبقاً. هل تريد استخدامها أم تحميل نسخة جديدة؟'),
+          content: const Text(
+            'توجد قاعدة بيانات محفوظة مسبقاً. هل تريد استخدامها أم تحميل نسخة جديدة؟',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -123,7 +126,8 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(institutionName: _institutionController.text.trim()),
+            builder: (context) =>
+                HomePage(institutionName: _institutionController.text.trim()),
           ),
         );
       }
@@ -142,24 +146,17 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.school,
-              size: 80,
-              color: Colors.blue,
-            ),
+            const Icon(Icons.school, size: 80, color: Colors.blue),
             const SizedBox(height: 32),
-            
+
             const Text(
               'مرحباً بك في نظام عرض بيانات المدارس الخاصة',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             TextField(
               controller: _institutionController,
               decoration: const InputDecoration(
@@ -171,9 +168,9 @@ class _LoginPageState extends State<LoginPage> {
               textAlign: TextAlign.center,
               enabled: !_isLoading,
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -192,7 +189,9 @@ class _LoginPageState extends State<LoginPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           ),
                           SizedBox(width: 10),
@@ -205,9 +204,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -219,9 +218,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             if (_statusMessage.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(12),
